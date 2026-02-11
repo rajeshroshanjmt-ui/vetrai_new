@@ -1,7 +1,7 @@
 """Add profile-image column
 
 Revision ID: 67cc006d50bf
-Revises: 260dbcc8b680
+Revises: a001_add_auth_users_table
 Create Date: 2023-09-08 07:36:13.387318
 
 """
@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "67cc006d50bf"
-down_revision: str | None = "260dbcc8b680"
+down_revision: str | None = "a001_add_auth_users_table"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
