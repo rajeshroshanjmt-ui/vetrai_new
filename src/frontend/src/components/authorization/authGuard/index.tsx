@@ -4,14 +4,14 @@ import {
   VETRAI_ACCESS_TOKEN_EXPIRE_SECONDS,
   VETRAI_ACCESS_TOKEN_EXPIRE_SECONDS_ENV,
 } from "@/constants/constants";
-import { useRefreshAccessToken } from "@/controllers/API/queries/auth";
 import { CustomNavigate } from "@/customization/components/custom-navigate";
 import useAuthStore from "@/stores/authStore";
+import { AuthAPIClient } from "@/utils/authAPIClient";
 
 export const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { mutate: mutateRefresh } = useRefreshAccessToken();
+  const { isAuthenticated, accessToken, refreshToken, setAuthTokens } = useAuthStore();
   const autoLogin = useAuthStore((state) => state.autoLogin);
+  const userData = useAuthStore((state) => state.userData);
   const isAutoLoginEnv = IS_AUTO_LOGIN;
   const testMockAutoLogin = sessionStorage.getItem("testMockAutoLogin");
 
@@ -20,24 +20,29 @@ export const ProtectedRoute = ({ children }) => {
     autoLogin !== undefined &&
     (!autoLogin || !isAutoLoginEnv);
 
+  // Token refresh effect
   useEffect(() => {
+    if (!isAuthenticated || !refreshToken) return;
+
     const envRefreshTime = VETRAI_ACCESS_TOKEN_EXPIRE_SECONDS_ENV;
     const automaticRefreshTime = VETRAI_ACCESS_TOKEN_EXPIRE_SECONDS;
+    const refreshInterval = isNaN(envRefreshTime) ? automaticRefreshTime : envRefreshTime;
 
-    const accessTokenTimer = isNaN(envRefreshTime)
-      ? automaticRefreshTime
-      : envRefreshTime;
-
-    const intervalFunction = () => {
-      mutateRefresh();
+    const refreshAccessToken = async () => {
+      try {
+        const result = await AuthAPIClient.refreshToken(refreshToken);
+        if (userData) {
+          setAuthTokens(result.access_token, result.refresh_token, userData);
+        }
+      } catch (error) {
+        // Refresh failed, redirect to login
+        useAuthStore.getState().logout();
+      }
     };
 
-    if (autoLogin !== undefined && !autoLogin && isAuthenticated) {
-      const intervalId = setInterval(intervalFunction, accessTokenTimer * 1000);
-      intervalFunction();
-      return () => clearInterval(intervalId);
-    }
-  }, [isAuthenticated]);
+    const intervalId = setInterval(refreshAccessToken, refreshInterval * 1000);
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated, refreshToken, userData, setAuthTokens]);
 
   if (shouldRedirect || testMockAutoLogin) {
     const currentPath = window.location.pathname;

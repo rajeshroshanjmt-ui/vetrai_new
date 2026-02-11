@@ -4,9 +4,16 @@ import { RouterProvider } from "react-router-dom";
 import { LoadingPage } from "./pages/LoadingPage";
 import router from "./routes";
 import { useDarkStore } from "./stores/darkStore";
+import useAuthStore from "./stores/authStore";
 
 export default function App() {
   const dark = useDarkStore((state) => state.dark);
+  
+  // Initialize auth from localStorage on app load
+  useEffect(() => {
+    useAuthStore.getState().initializeAuth();
+  }, []);
+  
   useEffect(() => {
     if (!dark) {
       document.getElementById("body")!.classList.remove("dark");
@@ -14,6 +21,7 @@ export default function App() {
       document.getElementById("body")!.classList.add("dark");
     }
   }, [dark]);
+  
   return (
     <Suspense fallback={<LoadingPage />}>
       <RouterProvider router={router} />

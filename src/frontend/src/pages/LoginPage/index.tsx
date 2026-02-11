@@ -1,18 +1,13 @@
 import * as Form from "@radix-ui/react-form";
-import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useState } from "react";
 import VetraiLogo from "@/assets/VetraiLogo.svg?react";
-import { useLoginUser } from "@/controllers/API/queries/auth";
 import { CustomLink } from "@/customization/components/custom-link";
-import { useSanitizeRedirectUrl } from "@/hooks/use-sanitize-redirect-url";
 import InputComponent from "../../components/core/parameterRenderComponent/components/inputComponent";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { SIGNIN_ERROR_ALERT } from "../../constants/alerts_constants";
-import { CONTROL_LOGIN_STATE, IS_AUTO_LOGIN } from "../../constants/constants";
-import { AuthContext } from "../../contexts/authContext";
+import { CONTROL_LOGIN_STATE } from "../../constants/constants";
 import useAlertStore from "../../stores/alertStore";
-import type { LoginType } from "../../types/api";
+import { useJWTLogin } from "@/hooks/useJWTLogin";
 import type {
   inputHandlerEventType,
   loginInputStateType,
@@ -23,10 +18,7 @@ export default function LoginPage(): JSX.Element {
     useState<loginInputStateType>(CONTROL_LOGIN_STATE);
 
   const { password, username } = inputState;
-
-  useSanitizeRedirectUrl();
-
-  const { login, clearAuthSession } = useContext(AuthContext);
+  const { login, isLoading, error: loginError } = useJWTLogin();
   const setErrorData = useAlertStore((state) => state.setErrorData);
 
   function handleInput({
@@ -35,40 +27,33 @@ export default function LoginPage(): JSX.Element {
     setInputState((prev) => ({ ...prev, [name]: value }));
   }
 
-  const { mutate } = useLoginUser();
-  const queryClient = useQueryClient();
+  async function signIn() {
+    if (!username.trim() || !password.trim()) {
+      setErrorData({
+        title: "Login Error",
+        list: ["Please enter both username and password"],
+      });
+      return;
+    }
 
-  function signIn() {
-    const user: LoginType = {
-      username: username.trim(),
-      password: password.trim(),
-    };
-
-    mutate(user, {
-      onSuccess: (data) => {
-        clearAuthSession();
-        login(data.access_token, "login", data.refresh_token);
-        queryClient.clear();
-      },
-      onError: (error) => {
-        setErrorData({
-          title: SIGNIN_ERROR_ALERT,
-          list: [error["response"]["data"]["detail"]],
-        });
-      },
-    });
+    try {
+      await login(username.trim(), password.trim());
+    } catch (error: any) {
+      setErrorData({
+        title: "Login Error",
+        list: [loginError || "Login failed. Please try again."],
+      });
+    }
   }
 
   return (
     <Form.Root
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
+        event.preventDefault();
         if (password === "") {
-          event.preventDefault();
           return;
         }
-        signIn();
-        const _data = Object.fromEntries(new FormData(event.currentTarget));
-        event.preventDefault();
+        await signIn();
       }}
       className="h-screen w-full"
     >
@@ -143,8 +128,11 @@ export default function LoginPage(): JSX.Element {
             {/* Sign In Button */}
             <div className="mb-4 w-full">
               <Form.Submit asChild>
-                <Button className="w-full rounded-lg bg-blue-600 py-2.5 font-semibold text-white transition-all hover:bg-blue-700 active:scale-95">
-                  Sign in
+                <Button 
+                  disabled={isLoading}
+                  className="w-full rounded-lg bg-blue-600 py-2.5 font-semibold text-white transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Signing in..." : "Sign in"}
                 </Button>
               </Form.Submit>
             </div>
