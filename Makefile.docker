@@ -1,0 +1,245 @@
+.PHONY: help docker-up docker-down docker-logs docker-build docker-restart docker-clean docker-backup docker-restore docker-ps docker-exec-backend docker-exec-db docker-test-auth
+
+# Docker Compose Utilities Makefile
+
+help:
+	@echo "==================================="
+	@echo "Vetrai Docker Compose Commands"
+	@echo "==================================="
+	@echo ""
+	@echo "Setup:"
+	@echo "  make setup          - Copy .env.example to .env"
+	@echo "  make env-secret     - Generate JWT secret"
+	@echo ""
+	@echo "Service Management:"
+	@echo "  make docker-up      - Start all services"
+	@echo "  make docker-down    - Stop all services"
+	@echo "  make docker-build   - Build all images"
+	@echo "  make docker-restart - Restart all services"
+	@echo "  make docker-ps      - Show service status"
+	@echo ""
+	@echo "Logs & Monitoring:"
+	@echo "  make docker-logs          - Show all logs"
+	@echo "  make docker-logs-backend  - Show backend logs"
+	@echo "  make docker-logs-frontend - Show frontend logs"
+	@echo "  make docker-logs-db       - Show database logs"
+	@echo "  make docker-stats         - Show resource usage"
+	@echo ""
+	@echo "Database:"
+	@echo "  make docker-migrate - Run database migrations"
+	@echo "  make docker-backup  - Backup database"
+	@echo "  make docker-restore - Restore database"
+	@echo "  make docker-shell   - Access database shell"
+	@echo "  make docker-reset   - Reset database (CAUTION!)"
+	@echo ""
+	@echo "Testing:"
+	@echo "  make docker-test-auth   - Test authentication endpoint"
+	@echo "  make docker-test-health - Test health check"
+	@echo "  make docker-test-api    - Test API connectivity"
+	@echo ""
+	@echo "Development:"
+	@echo "  make docker-exec-backend <CMD> - Execute command in backend"
+	@echo "  make docker-shell-backend      - SSH into backend"
+	@echo "  make docker-shell-frontend     - SSH into frontend"
+	@echo ""
+	@echo "Maintenance:"
+	@echo "  make docker-clean   - Remove volumes (loses data!)"
+	@echo "  make docker-prune   - Prune unused containers/images"
+	@echo "  make docker-status  - Full system status"
+	@echo ""
+
+# ===== Setup =====
+setup:
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "✓ Created .env from .env.example"; \
+	else \
+		echo "✓ .env already exists"; \
+	fi
+
+env-secret:
+	@echo "Generating JWT secret..."
+	@python3 -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
+
+# ===== Service Management =====
+docker-up:
+	@echo "Starting Vetrai services..."
+	docker-compose up -d
+	@echo "✓ Services started!"
+	@echo ""
+	@echo "Access the application:"
+	@echo "  Frontend: http://localhost:3000"
+	@echo "  Backend:  http://localhost:7860"
+	@echo ""
+	@make docker-ps
+
+docker-down:
+	@echo "Stopping Vetrai services..."
+	docker-compose down
+	@echo "✓ Services stopped!"
+
+docker-build:
+	@echo "Building Docker images..."
+	docker-compose build --no-cache
+	@echo "✓ Build complete!"
+
+docker-restart:
+	@echo "Restarting services..."
+	docker-compose restart
+	@echo "✓ Services restarted!"
+	@make docker-ps
+
+docker-ps:
+	@echo ""
+	@echo "Service Status:"
+	@docker-compose ps
+
+# ===== Logs =====
+docker-logs:
+	docker-compose logs -f
+
+docker-logs-backend:
+	docker-compose logs -f backend
+
+docker-logs-frontend:
+	docker-compose logs -f frontend
+
+docker-logs-db:
+	docker-compose logs -f postgres
+
+docker-stats:
+	docker stats
+
+# ===== Database =====
+docker-migrate:
+	@echo "Running database migrations..."
+	docker-compose exec backend bash -c "cd src/backend/base && python -m alembic upgrade head"
+	@echo "✓ Migrations complete!"
+
+docker-backup:
+	@echo "Backing up database..."
+	@mkdir -p backups
+	docker-compose exec -T postgres pg_dump -U vetrai vetrai > backups/vetrai_backup_$(shell date +%Y%m%d_%H%M%S).sql
+	@echo "✓ Backup created!"
+	@ls -lh backups/ | tail -1
+
+docker-restore:
+	@echo "Restoring database from backup..."
+	@read -p "Enter backup file name (in backups/ folder): " backup; \
+	docker-compose exec -T postgres psql -U vetrai vetrai < backups/$$backup
+	@echo "✓ Restore complete!"
+
+docker-shell:
+	docker-compose exec postgres psql -U vetrai -d vetrai
+
+docker-reset:
+	@echo "WARNING: This will delete all data!"
+	@read -p "Are you sure? Type 'yes' to confirm: " confirm; \
+	if [ "$$confirm" = "yes" ]; then \
+		docker-compose exec -T postgres psql -U vetrai -c "DROP DATABASE vetrai; CREATE DATABASE vetrai;"; \
+		$(MAKE) docker-migrate; \
+		echo "✓ Database reset and re-initialized!"; \
+	else \
+		echo "✗ Cancelled"; \
+	fi
+
+# ===== Testing =====
+docker-test-auth:
+	@echo "Testing authentication endpoint..."
+	@echo ""
+	@echo "Login request:"
+	curl -X POST http://localhost:7860/api/auth/login \
+		-H "Content-Type: application/json" \
+		-d '{"username":"admin","password":"admin123"}' \
+		-s | python3 -m json.tool
+	@echo ""
+
+docker-test-health:
+	@echo "Testing health check..."
+	@curl -f http://localhost:7860/health_check -s && echo "✓ Backend is healthy" || echo "✗ Backend is not responding"
+	@curl -f http://localhost:3000 -s > /dev/null && echo "✓ Frontend is healthy" || echo "✗ Frontend is not responding"
+
+docker-test-api:
+	@echo "Testing API connectivity..."
+	@echo "Backend: "
+	@curl -s http://localhost:7860/health_check | python3 -m json.tool
+	@echo ""
+	@echo "Frontend: "
+	@curl -s -I http://localhost:3000 | head -5
+
+# ===== Shell Access =====
+docker-shell-backend:
+	docker-compose exec backend bash
+
+docker-shell-frontend:
+	docker-compose exec frontend sh
+
+# ===== Maintenance =====
+docker-clean:
+	@echo "WARNING: This will remove volumes and lose all data!"
+	@read -p "Are you sure? Type 'yes' to confirm: " confirm; \
+	if [ "$$confirm" = "yes" ]; then \
+		docker-compose down -v; \
+		echo "✓ Volumes removed!"; \
+	else \
+		echo "✗ Cancelled"; \
+	fi
+
+docker-prune:
+	@echo "Pruning Docker system..."
+	docker image prune -af
+	docker container prune -f
+	docker volume prune -f
+	@echo "✓ Cleanup complete!"
+
+docker-status:
+	@echo "=== Docker System Status ==="
+	@echo ""
+	@echo "Services:"
+	@docker-compose ps
+	@echo ""
+	@echo "Resource Usage:"
+	@docker stats --no-stream
+	@echo ""
+	@echo "Disk Usage:"
+	@docker system df
+	@echo ""
+	@echo "Network:"
+	@docker network ls | grep vetrai
+	@echo ""
+	@echo "Volumes:"
+	@docker volume ls | grep vetrai
+
+# ===== Development Helpers =====
+dev-logs:
+	@clear
+	@docker-compose logs --timestamps -f backend frontend
+
+dev-restart-backend:
+	docker-compose restart backend
+	@echo "✓ Backend restarted"
+
+dev-restart-frontend:
+	docker-compose restart frontend
+	@echo "✓ Frontend restarted"
+
+# ===== Info =====
+info:
+	@echo "=== Vetrai Application Info ==="
+	@echo ""
+	@echo "Frontend URL:  http://localhost:3000"
+	@echo "Backend URL:   http://localhost:7860"
+	@echo "Database:      postgres://vetrai:vetrai@localhost:5432/vetrai"
+	@echo ""
+	@echo "Default Login:"
+	@echo "  Username: admin"
+	@echo "  Password: admin123"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  Auth Setup:   AUTH_SETUP_GUIDE.md"
+	@echo "  Quick Ref:    AUTH_QUICK_REFERENCE.md"
+	@echo "  Docker:       DOCKER_SETUP_GUIDE.md"
+	@echo ""
+
+# Default target
+.DEFAULT_GOAL := help

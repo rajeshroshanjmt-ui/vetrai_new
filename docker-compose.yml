@@ -1,106 +1,150 @@
+version: '3.9'
+
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database with persistent storage
   postgres:
     image: postgres:16-alpine
     container_name: vetrai_postgres
     restart: always
     environment:
-      POSTGRES_USER: vetrai
-      POSTGRES_PASSWORD: vetrai
-      POSTGRES_DB: vetrai
+      POSTGRES_USER: ${DB_USER:-vetrai}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vetrai}
+      POSTGRES_DB: ${DB_NAME:-vetrai}
       POSTGRES_INITDB_ARGS: "-E UTF8"
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - vetrai_postgres_data:/var/lib/postgresql/data
     networks:
       - vetrai_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vetrai -d vetrai"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-vetrai} -d ${DB_NAME:-vetrai}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # VetRAI Application
-  vetrai:
+  # Backend API Service (FastAPI + Langflow)
+  backend:
     build:
       context: .
       dockerfile: docker/fix.Dockerfile
-    container_name: vetrai_app
+    container_name: vetrai_backend
     restart: always
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      # Database
+      VETRAI_DATABASE_URL: postgresql://${DB_USER:-vetrai}:${DB_PASSWORD:-vetrai}@postgres:5432/${DB_NAME:-vetrai}
       PYTHONDONTWRITEBYTECODE: 1
-      VETRAI_DATABASE_URL: postgresql://vetrai:vetrai@postgres:5432/vetrai
-      VETRAI_SUPERUSER: vetrai
-      VETRAI_SUPERUSER_PASSWORD: vetrai
+      
+      # JWT Authentication
+      SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-change-in-production}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      
+      # Server Config
       VETRAI_CONFIG_DIR: /var/lib/vetrai
+      VETRAI_LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # CORS - Allow frontend requests
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:80,http://frontend:80}
+      
+      # Optional: Superuser initialization (auto-creates on first run)
+      VETRAI_SUPERUSER: ${SUPERUSER:-admin}
+      VETRAI_SUPERUSER_PASSWORD: ${SUPERUSER_PASSWORD:-admin123}
+    
     env_file:
       - .env
+    
     ports:
-      - "7860:7860"
-      - "3000:3000"
+      - "${BACKEND_PORT:-7860}:7860"
+    
     volumes:
-      - .:/app
+      - vetrai_config_data:/var/lib/vetrai
+      - ./src/backend:/app/src/backend
+    
     networks:
       - vetrai_network
+    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7860/health_check"]
       interval: 30s
       timeout: 10s
       retries: 3
+    
+    # Run database migrations on startup
+    command: >
+      sh -c "cd src/backend/base && 
+             python -m alembic upgrade head &&
+             python -m uvicorn vetrai.main:create_app --factory --host 0.0.0.0 --port 7860"
 
-  # Nginx Frontend
-  nginx:
+  # Frontend Service (React + Vite)
+  frontend:
     build:
-      context: .
-      dockerfile: docker/frontend/build_and_push_frontend.Dockerfile
-    container_name: vetrai_nginx
+      context: ./src/frontend
+      dockerfile: ../../docker/frontend/Dockerfile.frontend
+      args:
+        REACT_APP_API_URL: http://backend:7860
+    container_name: vetrai_frontend
     restart: always
     depends_on:
-      - vetrai
+      - backend
     environment:
-      BACKEND_URL: http://vetrai:7860
-      FRONTEND_PORT: 80
-      LANGFLOW_MAX_FILE_SIZE_UPLOAD: "100"
+      NODE_ENV: ${NODE_ENV:-production}
+      REACT_APP_API_URL: http://backend:7860
+      VITE_API_URL: http://backend:7860
+    
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-3000}:80"
+    
+    volumes:
+      - ./src/frontend:/app
+      - /app/node_modules
+    
     networks:
       - vetrai_network
+    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Offline Repository API Service
-  repo-api:
-    image: python:3.11-slim
-    container_name: vetrai_repo_api
-    working_dir: /app
-    command: pip install fastapi uvicorn && python -m uvicorn repo_api:app --host 0.0.0.0 --port 8001
-    volumes:
-      - .:/app
-    ports:
-      - "8001:8001"
-    networks:
-      - vetrai_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: always
+  # Nginx Reverse Proxy (Optional - uncomment to use)
+  # nginx:
+  #   image: nginx:latest-alpine
+  #   container_name: vetrai_nginx
+  #   restart: always
+  #   depends_on:
+  #     - backend
+  #     - frontend
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   networks:
+  #     - vetrai_network
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
 
+# Persistent Volumes
 volumes:
   vetrai_postgres_data:
     driver: local
   vetrai_config_data:
     driver: local
 
+# Network Configuration
 networks:
   vetrai_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
 
