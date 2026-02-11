@@ -1,0 +1,1 @@
+import{bQ as o}from"./index-nFkit7W6.js";const e=[["path",{d:"M12.338 21.994A10 10 0 1 1 21.925 13.227",key:"1i7shu"}],["path",{d:"M12 6v6l2 1",key:"19cm8n"}],["path",{d:"m14 18 4 4 4-4",key:"1waygx"}],["path",{d:"M18 14v8",key:"irew45"}]],c=o("clock-arrow-down",e);export{e as __iconNode,c as default};

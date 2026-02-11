@@ -1,0 +1,106 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: vetrai_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: vetrai
+      POSTGRES_PASSWORD: vetrai
+      POSTGRES_DB: vetrai
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - vetrai_postgres_data:/var/lib/postgresql/data
+    networks:
+      - vetrai_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vetrai -d vetrai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # VetRAI Application
+  vetrai:
+    build:
+      context: .
+      dockerfile: docker/fix.Dockerfile
+    container_name: vetrai_app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PYTHONDONTWRITEBYTECODE: 1
+      VETRAI_DATABASE_URL: postgresql://vetrai:vetrai@postgres:5432/vetrai
+      VETRAI_SUPERUSER: vetrai
+      VETRAI_SUPERUSER_PASSWORD: vetrai
+      VETRAI_CONFIG_DIR: /var/lib/vetrai
+    env_file:
+      - .env
+    ports:
+      - "7860:7860"
+      - "3000:3000"
+    volumes:
+      - .:/app
+    networks:
+      - vetrai_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health_check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Frontend
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/frontend/build_and_push_frontend.Dockerfile
+    container_name: vetrai_nginx
+    restart: always
+    depends_on:
+      - vetrai
+    environment:
+      BACKEND_URL: http://vetrai:7860
+      FRONTEND_PORT: 80
+      LANGFLOW_MAX_FILE_SIZE_UPLOAD: "100"
+    ports:
+      - "80:80"
+    networks:
+      - vetrai_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Offline Repository API Service
+  repo-api:
+    image: python:3.11-slim
+    container_name: vetrai_repo_api
+    working_dir: /app
+    command: pip install fastapi uvicorn && python -m uvicorn repo_api:app --host 0.0.0.0 --port 8001
+    volumes:
+      - .:/app
+    ports:
+      - "8001:8001"
+    networks:
+      - vetrai_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+volumes:
+  vetrai_postgres_data:
+    driver: local
+  vetrai_config_data:
+    driver: local
+
+networks:
+  vetrai_network:
+    driver: bridge
+

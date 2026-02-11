@@ -1,0 +1,1 @@
+import{bQ as c}from"./index-nFkit7W6.js";const o=[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["polyline",{points:"12 6 12 12 12 16.5",key:"hb2qv6"}]],l=c("clock-6",o);export{o as __iconNode,l as default};

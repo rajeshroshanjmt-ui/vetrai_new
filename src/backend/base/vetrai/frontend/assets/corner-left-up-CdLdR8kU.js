@@ -1,0 +1,1 @@
+import{bQ as o}from"./index-nFkit7W6.js";const e=[["polyline",{points:"14 9 9 4 4 9",key:"m9oyvo"}],["path",{d:"M20 20h-7a4 4 0 0 1-4-4V4",key:"1blwi3"}]],n=o("corner-left-up",e);export{e as __iconNode,n as default};

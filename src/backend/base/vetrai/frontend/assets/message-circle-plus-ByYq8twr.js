@@ -1,0 +1,1 @@
+import{bQ as e}from"./index-nFkit7W6.js";const s=[["path",{d:"M7.9 20A9 9 0 1 0 4 16.1L2 22Z",key:"vv11sd"}],["path",{d:"M8 12h8",key:"1wcyev"}],["path",{d:"M12 8v8",key:"napkw2"}]],c=e("message-circle-plus",s);export{s as __iconNode,c as default};

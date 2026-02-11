@@ -1,0 +1,43 @@
+{
+  "repo": "vetrai",
+  "owner": "vetrai-ai",
+  "url": "https://github.com/vetrai-ai/vetrai",
+  "description": "Platform for building and deploying AI-powered agents and workflows",
+  "stars": 2500,
+  "forks": 450,
+  "watchers": 180,
+  "language": "Python",
+  "license": "MIT",
+  "open_issues": 45,
+  "open_pull_requests": 12,
+  "topics": [
+    "ai",
+    "workflow",
+    "agents",
+    "llm",
+    "langflow",
+    "python",
+    "fastapi"
+  ],
+  "releases": {
+    "latest": "1.8.0",
+    "latest_release_date": "2026-02-01T10:30:00Z",
+    "total_releases": 45
+  },
+  "stats": {
+    "last_synced": "2026-02-07T12:00:00Z",
+    "default_branch": "main",
+    "total_commits": 5300,
+    "contributors": 125
+  },
+  "features": [
+    "Visual builder interface",
+    "Source code access",
+    "Interactive playground",
+    "Multi-agent orchestration",
+    "Deploy as API",
+    "Deploy as MCP server",
+    "Observability integrations",
+    "Enterprise-ready security"
+  ]
+}

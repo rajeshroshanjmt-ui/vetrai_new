@@ -1,0 +1,35 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Docker volumes and data
+vetrai_postgres_data/
+.docker/
+
+# Logs
+*.log
+logs/
+
+# IDE and OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary files
+.tmp/
+tmp/
+temp/
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# OS-specific
+.env.*.swp

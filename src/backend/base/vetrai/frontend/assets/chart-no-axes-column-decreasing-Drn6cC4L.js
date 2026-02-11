@@ -1,0 +1,1 @@
+import{bQ as e}from"./index-nFkit7W6.js";const o=[["path",{d:"M12 20V10",key:"g8npz5"}],["path",{d:"M18 20v-4",key:"8uic4z"}],["path",{d:"M6 20V4",key:"1w1bmo"}]],c=e("chart-no-axes-column-decreasing",o);export{o as __iconNode,c as default};

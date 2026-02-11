@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Unique Vetrai Logo: Stylized V with AI circuit pattern - Colored -->
+  <defs>
+    <linearGradient id="vetraiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.18l6.9 3.83L12 11.83 5.1 8.01 12 4.18zM5 9.5l6 3.33v6.67l-6-3.33V9.5zm8 10v-6.67l6-3.33v6.67l-6 3.33z" fill="url(#vetraiGrad)"/>
+  <circle cx="12" cy="12" r="2" fill="#10b981"/>
+  <path d="M12 8v2M12 14v2M8 12h2M14 12h2" stroke="#10b981" stroke-width="1" fill="none"/>
+</svg>
