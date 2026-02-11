@@ -40,10 +40,14 @@ def upgrade() -> None:
             sa.Column("created_at", sa.DateTime, default=sa.func.now()),
             sa.Column("updated_at", sa.DateTime, default=sa.func.now(), onupdate=sa.func.now()),
         )
-        
-        # Create indices
+    
+    # Create indices if they don't exist
+    existing_indexes = [idx.name for idx in inspector.get_indexes("auth_users")]
+    if "ix_auth_users_username" not in existing_indexes:
         op.create_index("ix_auth_users_username", "auth_users", ["username"])
+    if "ix_auth_users_email" not in existing_indexes:
         op.create_index("ix_auth_users_email", "auth_users", ["email"])
+    if "ix_auth_users_org_id" not in existing_indexes:
         op.create_index("ix_auth_users_org_id", "auth_users", ["org_id"])
 
 
