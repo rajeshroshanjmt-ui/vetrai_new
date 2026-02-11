@@ -25,7 +25,7 @@ jobs:
           prune-cache: false
       - run: uv run ruff check --fix-only .
       - run: uv run ruff format . --config pyproject.toml
-      - uses: autofix-ci/action@635ffb0c9798bd160680f18fd73371e355b85f27
+      - uses: autofix-ci/action@7a166d7532b277f34e16238930461bf77f9d7ed8
 
 
   update-starter-projects:
@@ -50,7 +50,7 @@ jobs:
       - name: Run starter projects update
         run: uv run python scripts/ci/update_starter_projects.py
 
-      - uses: autofix-ci/action@635ffb0c9798bd160680f18fd73371e355b85f27
+      - uses: autofix-ci/action@7a166d7532b277f34e16238930461bf77f9d7ed8
 
 
   update-component-index:
@@ -75,7 +75,7 @@ jobs:
           LFX_DEV: "1"
         run: make build_component_index
 
-      - uses: autofix-ci/action@635ffb0c9798bd160680f18fd73371e355b85f27
+      - uses: autofix-ci/action@7a166d7532b277f34e16238930461bf77f9d7ed8
 
 
 
