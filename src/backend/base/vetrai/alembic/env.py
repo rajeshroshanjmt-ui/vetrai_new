@@ -20,6 +20,17 @@ from vetrai.services.database.service import SQLModel
 # access to the values within the .ini file in use.
 config = context.config
 
+# Override database URL from environment variable if provided
+database_url = os.getenv("VETRAI_DATABASE_URL")
+if database_url:
+    # Convert async URL format for alembic if needed
+    if "postgresql" in database_url:
+        # For PostgreSQL, use the synchronous psycopg URL for alembic
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://")
+    config.set_main_option("sqlalchemy.url", database_url)
+    logger.info(f"Using database URL from environment: {database_url[:50]}...")
+
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:

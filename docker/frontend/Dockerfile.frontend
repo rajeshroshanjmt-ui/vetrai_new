@@ -19,8 +19,9 @@ ENV VITE_API_URL=${REACT_APP_API_URL}
 
 RUN npm run build
 
-# List files for debugging - keep this temporarily
-RUN if [ -d "/app/dist" ]; then echo "dist found"; fi && ls -la /app/
+# Verify build was created
+RUN if [ ! -d "/app/build" ]; then echo "ERROR: build directory not created"; exit 1; fi && \
+    ls -la /app/build/ | head -20
 
 # Production stage  
 FROM nginx:alpine
@@ -28,8 +29,12 @@ FROM nginx:alpine
 # Copy nginx config
 COPY docker/frontend/nginx.conf /etc/nginx/nginx.conf
 
-# Copy built app from builder - use wildcard to handle any output dir
-COPY --from=builder /app/dist* /usr/share/nginx/html/
+# Copy built app from builder (Vite outputs to build/)
+COPY --from=builder /app/build /usr/share/nginx/html/
+
+# Verify files were copied
+RUN ls -la /usr/share/nginx/html/ | head -10 && \
+    if [ ! -f "/usr/share/nginx/html/index.html" ]; then echo "ERROR: index.html not found"; exit 1; fi
 
 # Expose port
 EXPOSE 80

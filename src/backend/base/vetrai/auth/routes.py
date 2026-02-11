@@ -20,7 +20,7 @@ async def get_db() -> Session:
 async def login(request: LoginRequest, session: Session = Depends(get_db)):
     """Login with username and password."""
     # Get user from database
-    user = UserService.get_user_by_username(session, request.username)
+    user = await UserService.get_user_by_username(session, request.username)
     
     if not user:
         raise HTTPException(
@@ -65,7 +65,7 @@ async def refresh_token(request: RefreshTokenRequest, session: Session = Depends
         )
     
     # Get user
-    user = UserService.get_user_by_id(session, payload["user_id"])
+    user = await UserService.get_user_by_id(session, payload["user_id"])
     
     if not user or not user.is_active:
         raise HTTPException(
@@ -115,7 +115,7 @@ async def get_current_user(
         )
     
     # Get user
-    user = UserService.get_user_by_id(session, token_data.user_id)
+    user = await UserService.get_user_by_id(session, token_data.user_id)
     
     if not user or not user.is_active:
         raise HTTPException(

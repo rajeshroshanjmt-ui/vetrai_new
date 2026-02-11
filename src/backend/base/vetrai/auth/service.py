@@ -136,21 +136,23 @@ class UserService:
         return default_user
     
     @staticmethod
-    def get_user_by_username(db_session, username: str) -> Optional[UserDB]:
+    async def get_user_by_username(db_session, username: str) -> Optional[UserDB]:
         """Get user by username."""
         from sqlalchemy import select
         
-        result = db_session.execute(
+        result = await db_session.execute(
             select(UserDB).where(UserDB.username == username)
-        ).first()
-        return result[0] if result else None
+        )
+        row = result.first()
+        return row[0] if row else None
     
     @staticmethod
-    def get_user_by_id(db_session, user_id: int) -> Optional[UserDB]:
+    async def get_user_by_id(db_session, user_id: int) -> Optional[UserDB]:
         """Get user by ID."""
         from sqlalchemy import select
         
-        result = db_session.execute(
+        result = await db_session.execute(
             select(UserDB).where(UserDB.id == user_id)
-        ).first()
-        return result[0] if result else None
+        )
+        row = result.first()
+        return row[0] if row else None
