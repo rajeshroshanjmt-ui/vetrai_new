@@ -29,6 +29,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from vetrai.api import health_check_router, log_router
 from vetrai.api.router import router
 from vetrai.api.v1.mcp_projects import init_mcp_servers
+from vetrai.auth.routes import router as auth_router
 from vetrai.initial_setup.setup import (
     copy_profile_pictures,
     create_or_update_starter_projects,
@@ -515,6 +516,7 @@ def create_app():
         router.include_router(mcp_router)
 
     app.include_router(router)
+    app.include_router(auth_router)
     app.include_router(health_check_router)
     app.include_router(log_router)
 
