@@ -1,7 +1,7 @@
 """Adds tables
 
 Revision ID: 260dbcc8b680
-Revises:
+Revises: 
 Create Date: 2023-08-27 19:49:02.681355
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 # revision identifiers, used by Alembic.
 revision: str = "260dbcc8b680"
 down_revision: str | None = None
-branch_labels: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = "langflow_branch"
 depends_on: str | Sequence[str] | None = None
 
 

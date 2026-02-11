@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # PostgreSQL Database with persistent storage
   postgres:
@@ -73,18 +71,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    
-    # Run database migrations on startup
-    command: >
-      sh -c "cd src/backend/base && 
-             python -m alembic upgrade head &&
-             python -m uvicorn vetrai.main:create_app --factory --host 0.0.0.0 --port 7860"
 
   # Frontend Service (React + Vite)
   frontend:
     build:
-      context: ./src/frontend
-      dockerfile: ../../docker/frontend/Dockerfile.frontend
+      context: .
+      dockerfile: docker/frontend/Dockerfile.frontend
       args:
         REACT_APP_API_URL: http://backend:7860
     container_name: vetrai_frontend

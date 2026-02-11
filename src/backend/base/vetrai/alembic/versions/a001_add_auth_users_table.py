@@ -14,7 +14,7 @@ from alembic import op
 # revision identifiers, used by Alembic.
 revision: str = "a001_add_auth_users_table"
 down_revision: str | None = None
-branch_labels: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = "auth_branch"
 depends_on: str | Sequence[str] | None = None
 
 
